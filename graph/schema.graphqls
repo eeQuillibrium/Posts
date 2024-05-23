@@ -1,0 +1,62 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Topic {
+  id: Int!
+  userId: Int!
+  text: String!
+  header: String!
+  issuedAt: String!
+}
+
+type Comment {
+  id: Int!
+  topicId: Int!
+  parentId: Int
+  text: String!
+  userId: ID!
+  issuedAt: String!
+}
+type User {
+  id: Int!
+  login: String!
+  password: String!
+  name: String!
+}
+input PaginationTopics {
+  offset: Int!
+  limit: Int!
+}
+
+type Query {
+  topics(input: PaginationTopics!): [Topic!]!
+  users: [User!]!
+}
+
+input NewTopic{
+  header: String!
+  text: String!
+  userId: Int!
+  issuedAt: String!
+}
+
+input NewComment {
+  parentId: Int
+  text: String!
+  userId: Int!
+  issuedAt: String!
+}
+
+input NewUser {
+  userId: Int!
+  name: String!
+  login: String!
+  password: String!
+}
+
+type Mutation {
+  createTopic(input: NewTopic!): Topic!
+  createComment(input: NewComment!): Comment!
+  createUser(input: NewUser!): User!
+}
