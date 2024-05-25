@@ -9,6 +9,20 @@ import (
 	"github.com/eeQuillibrium/posts/pkg/logger"
 )
 
+type Comments interface {
+	CreateComment(
+		ctx context.Context,
+		comment *model.NewComment,
+	) (int, error)
+	GetComments(
+		ctx context.Context,
+		postID int,
+	) ([]*model.Comment, error)
+	GetByComment(
+		ctx context.Context,
+		commentID int,
+	) ([]*model.Comment, error)
+}
 type Auth interface {
 	Login(
 		ctx context.Context,
@@ -17,23 +31,32 @@ type Auth interface {
 	Register(
 		ctx context.Context,
 		user *model.NewUser,
-	) (*model.User, error)
+	) (int, error)
 }
 
-type Topics interface {
-	CreateTopic(
+type Posts interface {
+	CreatePost(
 		ctx context.Context,
-		topic *model.NewTopic,
-	) (*model.Topic, error)
-	GetTopics(
+		post *model.NewPost,
+	) (int, error)
+	ClosePost(
 		ctx context.Context,
-		getTopic *model.PaginationTopics,
-	) ([]*model.Topic, error)
+		postID int,
+	) (bool, error)
+	GetPosts(
+		ctx context.Context,
+		getPost *model.Pagination,
+	) ([]*model.Post, error)
+	GetPost(
+		ctx context.Context,
+		postID int,
+	) (*model.Post, error)
 }
 
 type Service struct {
-	Topics
+	Posts
 	Auth
+	Comments
 }
 
 func NewService(
@@ -42,7 +65,8 @@ func NewService(
 	repo *repository.Repository,
 ) *Service {
 	return &Service{
-		Topics: NewTopicsService(log, cfg, repo.Topics),
-		Auth:   NewAuthService(log, cfg, repo.Auth),
+		Posts:    NewPostsService(log, cfg, repo.Posts),
+		Auth:     NewAuthService(log, cfg, repo.Auth),
+		Comments: NewCommentsService(log, cfg, repo.Comments),
 	}
 }

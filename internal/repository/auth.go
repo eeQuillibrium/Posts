@@ -19,7 +19,7 @@ func NewAuthRepository(
 	log *logger.Logger,
 	cfg *config.Config,
 	db *sqlx.DB,
-) *auth {
+) Auth {
 	return &auth{
 		log: log,
 		cfg: cfg,
@@ -32,18 +32,14 @@ func (r *auth) Register(
 	login string,
 	passhash []byte,
 	name string,
-) (*model.User, error) {
+) (int, error) {
 	row := r.db.QueryRowContext(ctx, "INSERT INTO Users (name, login, passhash)"+
-		"VALUES ('', $1, $2) RETURNING id", name, login, passhash)
+		"VALUES ($1, $2, $3) RETURNING id", name, login, passhash)
 
 	var userID int
 	err := row.Scan(&userID)
 
-	return &model.User{
-		ID: userID,
-		Login: login,
-		Name: name,
-	}, err
+	return userID, err
 }
 func (r *auth) Login(
 	ctx context.Context,

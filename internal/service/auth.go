@@ -21,29 +21,28 @@ func NewAuthService(
 	log *logger.Logger,
 	cfg *config.Config,
 	repo repository.Auth,
-) *auth {
+) Auth {
 	return &auth{log: log, cfg: cfg, repo: repo}
 }
 func (s *auth) Register(
 	ctx context.Context,
 	user *model.NewUser,
-) (*model.User, error) {
-	if user.Password == "" {
-		return nil, errors.New("Register(): empty password")
+) (int, error) {
+	if user.Password == "" || user.Login == "" {
+		return 0, errors.New("Register(): empty password or login")
 	}
 
 	passhash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 5)
 	if err != nil {
-		return nil, errors.New("Register(): " + err.Error())
+		return 0, errors.New("Register(): " + err.Error())
 	}
 
-	newUser, err := s.repo.Register(ctx, user.Login, passhash, user.Name)
+	userID, err := s.repo.Register(ctx, user.Login, passhash, user.Name)
 	if err != nil {
-		return nil, errors.New("repo.Register(): " + err.Error())
+		return 0, errors.New("repo.Register(): " + err.Error())
 	}
-	newUser.Password = user.Password
 
-	return newUser, nil
+	return userID, nil
 }
 func (s *auth) Login(
 	ctx context.Context,

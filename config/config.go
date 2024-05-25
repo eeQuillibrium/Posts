@@ -51,7 +51,7 @@ func fetchConfigPath() string {
 	flag.Parse()
 
 	if path == "" {
-		path = os.Getenv("LIR_CONFIG_PATH")
+		path = os.Getenv("CONFIG_POSTS_PATH")
 	}
 
 	return path

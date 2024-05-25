@@ -9,16 +9,39 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type Topics interface {
-	CreateTopic(
+type Comments interface {
+	CreateComment(
 		ctx context.Context,
-		topic *model.NewTopic,
+		comment *model.NewComment,
 	) (int, error)
-	GetTopics(
+	GetComments(
+		ctx context.Context,
+		postID int,
+	) ([]*model.Comment, error)
+	GetByComment(
+		ctx context.Context,
+		commentID int,
+	) ([]*model.Comment, error)
+}
+
+type Posts interface {
+	CreatePost(
+		ctx context.Context,
+		post *model.NewPost,
+	) (int, error)
+	ClosePost(
+		ctx context.Context,
+		postID int,
+	) (bool, error)
+	GetPosts(
 		ctx context.Context,
 		offset int,
 		limit int,
-	) ([]*model.Topic, error)
+	) ([]*model.Post, error)
+	GetPost(
+		ctx context.Context,
+		postID int,
+	) (*model.Post, error)
 }
 
 type Auth interface {
@@ -32,12 +55,13 @@ type Auth interface {
 		login string,
 		passhash []byte,
 		name string,
-	) (*model.User, error)
+	) (int, error)
 }
 
 type Repository struct {
-	Topics
+	Posts
 	Auth
+	Comments
 }
 
 func NewRepository(
@@ -46,7 +70,8 @@ func NewRepository(
 	db *sqlx.DB,
 ) *Repository {
 	return &Repository{
-		Topics: NewTopicsRepository(log, cfg, db),
+		Posts: NewPostsRepository(log, cfg, db),
 		Auth:   NewAuthRepository(log, cfg, db),
+		Comments: NewCommentsRepository(log, cfg, db),
 	}
 }

@@ -1,22 +1,21 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
-type Topic {
+type Post {
   id: Int!
   userId: Int!
   text: String!
   header: String!
-  issuedAt: String!
+  createdAt: String!
+  is_closed: Boolean!
+  comments: [Comment!]!
 }
-
 type Comment {
   id: Int!
-  topicId: Int!
+  postId: Int!
   parentId: Int
+  userId: Int!
   text: String!
-  userId: ID!
-  issuedAt: String!
+  level: Int!
+  createdAt: String!
+  comments: [Comment!]!
 }
 type User {
   id: Int!
@@ -24,39 +23,51 @@ type User {
   password: String!
   name: String!
 }
-input PaginationTopics {
+input Pagination {
   offset: Int!
   limit: Int!
 }
 
 type Query {
-  topics(input: PaginationTopics!): [Topic!]!
+  posts(input: Pagination!): [Post!]!
+  post(postId: Int!, limit: Int!): Post!
+  paginationComment(postId: Int!, pagination: Pagination!): [Comment]!
   users: [User!]!
 }
 
-input NewTopic{
+input NewPost {
   header: String!
   text: String!
   userId: Int!
-  issuedAt: String!
 }
 
 input NewComment {
   parentId: Int
   text: String!
   userId: Int!
-  issuedAt: String!
+  postId: Int!
+  level: Int!
 }
 
 input NewUser {
-  userId: Int!
   name: String!
   login: String!
   password: String!
 }
 
 type Mutation {
-  createTopic(input: NewTopic!): Topic!
-  createComment(input: NewComment!): Comment!
-  createUser(input: NewUser!): User!
+  createPost(input: NewPost!): Int!
+  createComment(input: NewComment!):Int!
+  createUser(input: NewUser!): Int!
+  closePost(postID: Int!): Boolean!
+}
+
+
+type Notification {
+  text: String!
+  issuerId: Int!
+}
+
+type Subscription {
+  notification(postId: Int!): Notification!
 }

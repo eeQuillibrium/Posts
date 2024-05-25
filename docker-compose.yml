@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  posts:
+    container_name: posts
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    command: ./bin/main
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres_db
+    environment:
+      - CONFIG_POSTS_PATH=./config/config.yaml
+      - DB_PASSWORD=secret
+  postgres_db:
+    restart: always
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=secret

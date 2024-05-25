@@ -6,19 +6,27 @@ CREATE TABLE IF NOT EXISTS Users
     passhash VARCHAR(256) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS Topic
+CREATE TABLE IF NOT EXISTS Posts
 (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
     text TEXT NOT NULL,
-    header VARCHAR(64) NOT NULL
+    header VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_closed BOOLEAN NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Comments
 (
     id SERIAL PRIMARY KEY,
+    level INT NOT NULL,
+    text VARCHAR(2000) NOT NULL,
+    parent_id INT DEFAULT NULL,
     user_id INT NOT NULL,
-    topic_id INT NOT NULL,
-    parent_id INT,
-    text TEXT NOT NULL
+    post_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES Comments(id) ON DELETE CASCADE
 );

@@ -7,28 +7,75 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/eeQuillibrium/posts/graph/model"
 )
 
-// CreateTopic is the resolver for the createTopic field.
-func (r *mutationResolver) CreateTopic(ctx context.Context, input model.NewTopic) (*model.Topic, error) {
-	return r.Service.Topics.CreateTopic(ctx, &input)
+// Comments is the resolver for the comments field.
+func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*model.Comment, error) {
+	return r.service.Comments.GetByComment(ctx, obj.ID)
+}
+
+// CreatePost is the resolver for the createPost field.
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (int, error) {
+	return r.service.Posts.CreatePost(ctx, &input)
 }
 
 // CreateComment is the resolver for the createComment field.
-func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
+func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (int, error) {
+	go func() {
+		for {
+			select { //ждем 5 секунд на чтение из Notifications resolver
+			case <-time.After(5 * time.Second):
+				return
+			case r.notifyChan <- &model.Notification{
+				Text:     input.Text,
+				IssuerID: input.UserID,
+			}:
+				return
+			}
+		}
+	}()
+	return r.service.Comments.CreateComment(ctx, &input)
 }
 
 // CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (int, error) {
+	return r.service.Auth.Register(ctx, &input)
 }
 
-// Topics is the resolver for the topics field.
-func (r *queryResolver) Topics(ctx context.Context, input model.PaginationTopics) ([]*model.Topic, error) {
-	return r.Service.Topics.GetTopics(ctx, &input)
+// ClosePost is the resolver for the closePost field.
+func (r *mutationResolver) ClosePost(ctx context.Context, postID int) (bool, error) {
+	return r.service.Posts.ClosePost(ctx, postID)
+}
+
+// Posts is the resolver for the posts field.
+func (r *queryResolver) Posts(ctx context.Context, input model.Pagination) ([]*model.Post, error) {
+	return r.service.Posts.GetPosts(ctx, &input)
+}
+
+// Post is the resolver for the post field.
+func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model.Post, error) {
+	comments, err := r.service.Comments.GetComments(ctx, postID)
+	if err != nil {
+		return nil, err
+	}
+
+	r.ps.LoadPost(comments, postID) //cache
+
+	post, err := r.service.Posts.GetPost(ctx, postID)
+	if err != nil {
+		return nil, err
+	}
+	post.Comments = r.ps.PaginationComments(postID, 0, limit)
+	//post.Comments = comments
+	return post, nil
+}
+
+// PaginationComment is the resolver for the paginationComment field.
+func (r *queryResolver) PaginationComment(ctx context.Context, postID int, pagination model.Pagination) ([]*model.Comment, error) {
+	return r.ps.PaginationComments(postID, pagination.Offset, pagination.Limit), nil
 }
 
 // Users is the resolver for the users field.
@@ -36,21 +83,41 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented: Users - users"))
 }
 
+// Notification is the resolver for the notification field.
+func (r *subscriptionResolver) Notification(ctx context.Context, postID int) (<-chan *model.Notification, error) {
+	ch := make(chan *model.Notification)
+
+	go func() {
+		defer close(ch)
+		for {
+			time.Sleep(2 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				r.log.Info("Subscription Closed")
+				return
+			case ch <- <-r.notifyChan:
+				r.log.Info("readen")
+			}
+		}
+	}()
+
+	// We return the channel and no error.
+	return ch, nil
+}
+
+// Comment returns CommentResolver implementation.
+func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
+type commentResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) PaginationTopics(ctx context.Context) ([]*model.PaginationTopics, error) {
-	return nil, nil
-}
+type subscriptionResolver struct{ *Resolver }
