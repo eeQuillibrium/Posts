@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,9 @@ import (
 	"github.com/eeQuillibrium/posts/internal/repository"
 	"github.com/eeQuillibrium/posts/internal/service"
 	"github.com/eeQuillibrium/posts/pkg/logger"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -39,6 +43,23 @@ func (a *app) Run() error {
 	db, err := sqlx.ConnectContext(ctx, "postgres", dsn)
 	if err != nil {
 		return errors.New("postgres db connect: " + err.Error())
+	}
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer m.Close()
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatal(err)
 	}
 
 	repo := repository.NewRepository(a.log, a.cfg, db)
