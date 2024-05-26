@@ -3,7 +3,6 @@ package loaders
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/eeQuillibrium/posts/graph/model"
@@ -21,17 +20,8 @@ type commentReader struct {
 	db *sqlx.DB
 }
 
-func (u *commentReader) getComments(ctx context.Context, commentIDs []string) ([]*model.Comment, []error) {
-	var commentsIDs []int = make([]int, 0, len(commentIDs))
-	for i := 0; i < len(commentIDs); i++ {
-		id, err := strconv.Atoi(commentIDs[i])
-		if err != nil {
-			return nil, []error{err}
-		}
-		commentsIDs = append(commentsIDs, id)
-	}
-
-	query, args, err := sqlx.In("SELECT * FROM Comments WHERE id IN (?)", commentsIDs)
+func (u *commentReader) getComments(ctx context.Context, commentIDs []int) ([]*model.Comment, []error) {
+	query, args, err := sqlx.In("SELECT * FROM Comments WHERE id IN (?)", commentIDs)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -45,7 +35,7 @@ func (u *commentReader) getComments(ctx context.Context, commentIDs []string) ([
 }
 
 type Loaders struct {
-	CommentLoader *dataloadgen.Loader[string, *model.Comment]
+	CommentLoader *dataloadgen.Loader[int, *model.Comment]
 }
 
 func NewLoaders(db *sqlx.DB) *Loaders {
@@ -71,13 +61,13 @@ func For(ctx context.Context) *Loaders {
 }
 
 // GetUser returns single comment by id efficiently
-func GetComment(ctx context.Context, commentID string) (*model.Comment, error) {
+func GetComment(ctx context.Context, commentID int) (*model.Comment, error) {
 	loaders := For(ctx)
 	return loaders.CommentLoader.Load(ctx, commentID)
 }
 
 // GetUsers returns many comment by ids efficiently
-func GetComments(ctx context.Context, commentIDs []string) ([]*model.Comment, error) {
+func GetComments(ctx context.Context, commentIDs []int) ([]*model.Comment, error) {
 	loaders := For(ctx)
 	return loaders.CommentLoader.LoadAll(ctx, commentIDs)
 }

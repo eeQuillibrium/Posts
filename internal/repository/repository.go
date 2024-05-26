@@ -45,11 +45,13 @@ type Posts interface {
 }
 
 type Auth interface {
+	/*
 	Login(
 		ctx context.Context,
 		login string,
 		passhash string,
 	) (*model.User, error)
+	*/
 	Register(
 		ctx context.Context,
 		login string,

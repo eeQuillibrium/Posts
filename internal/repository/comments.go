@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/eeQuillibrium/posts/config"
@@ -60,18 +59,13 @@ func (r *comments) GetComments(
 	ctx context.Context,
 	postID int,
 ) ([]*model.Comment, error) {
-	var commentsInt []int
-	if err := r.db.SelectContext(ctx, &commentsInt, "SELECT id FROM Comments WHERE post_id = $1",
+	var commentIDs []int
+	if err := r.db.SelectContext(ctx, &commentIDs, "SELECT id FROM Comments WHERE post_id = $1",
 		postID); err != nil {
 		return nil, err
 	}
 
-	commentsStr := make([]string, 0, len(commentsInt))
-	for i := 0; i < len(commentsInt); i++ {
-		commentsStr = append(commentsStr, strconv.Itoa(commentsInt[i]))
-	}
-
-	return loaders.GetComments(ctx, commentsStr)
+	return loaders.GetComments(ctx, commentIDs)
 }
 
 func (r *comments) GetByComment(

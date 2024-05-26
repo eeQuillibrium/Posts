@@ -24,10 +24,12 @@ type Comments interface {
 	) ([]*model.Comment, error)
 }
 type Auth interface {
+	/*
 	Login(
 		ctx context.Context,
 		user *model.User,
 	) (*model.User, error)
+	*/
 	Register(
 		ctx context.Context,
 		user *model.NewUser,

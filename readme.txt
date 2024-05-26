@@ -1,7 +1,7 @@
 Тестовое задание, ozon fintech
  
 Для запуска:
-1. docker-compose up --build  
+1. docker-compose up
 
 Mutations:
   1. createComments: создает комментарии в бд и записывает в канал уведомление, 

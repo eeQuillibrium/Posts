@@ -44,6 +44,7 @@ func (s *auth) Register(
 
 	return userID, nil
 }
+/*
 func (s *auth) Login(
 	ctx context.Context,
 	user *model.User,
@@ -61,3 +62,4 @@ func (s *auth) Login(
 	//return jwt.GenerateToken(ctx, entityUser.ID, tokenTTL)
 	return nil, nil
 }
+*/
