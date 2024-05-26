@@ -12,7 +12,9 @@ import (
 	"github.com/eeQuillibrium/posts/internal/repository"
 	"github.com/eeQuillibrium/posts/internal/service"
 	"github.com/eeQuillibrium/posts/pkg/logger"
-
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -35,15 +37,29 @@ func NewApp(
 func (a *app) Run() error {
 	ctx, cancel := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
-		a.cfg.PostgresDB.Host, a.cfg.PostgresDB.Port, a.cfg.PostgresDB.Username, a.cfg.PostgresDB.DBName, os.Getenv("DB_PASSWORD"), a.cfg.PostgresDB.SSLMode)
-	a.log.Info(dsn)
 
-	db, err := sqlx.ConnectContext(ctx, "postgres", dsn)
+	db, err := sqlx.ConnectContext(ctx, "postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
+		a.cfg.PostgresDB.Host, a.cfg.PostgresDB.Port, a.cfg.PostgresDB.Username, a.cfg.PostgresDB.DBName, os.Getenv("DB_PASSWORD"), a.cfg.PostgresDB.SSLMode))
 	if err != nil {
 		return errors.New("app.Run(): " + err.Error())
 	}
-	a.createMigrations(db)
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver)
+	if err != nil {
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+	}
+	defer m.Close()
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+	}
 
 	repo := repository.NewRepository(a.log, a.cfg, db)
 	services := service.NewService(a.log, a.cfg, repo)

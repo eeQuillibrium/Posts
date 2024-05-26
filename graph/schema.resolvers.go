@@ -11,16 +11,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/eeQuillibrium/posts/graph/model"
-	"github.com/vektah/gqlparser/v2/gqlerror"
+	grapherrors "github.com/eeQuillibrium/posts/pkg/graphErrors"
 )
 
 // Comments is the resolver for the comments field.
 func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*model.Comment, error) {
 	comments, err := r.service.Comments.GetByComment(ctx, obj.ID)
 	if err != nil {
-		return nil, errors.New("commentResolver.Comments():\n" + err.Error())
+		return nil, grapherrors.TransformError(errors.New("commentResolver.Comments():\n" + err.Error()))
 	}
 	return comments, nil
 }
@@ -29,7 +28,7 @@ func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (int, error) {
 	postID, err := r.service.Posts.CreatePost(ctx, &input)
 	if err != nil {
-		return 0, errors.New("mutationResolver.CreatePost():\n" + err.Error())
+		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreatePost():\n" + err.Error()))
 	}
 	return postID, nil
 }
@@ -38,7 +37,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (int, error) {
 	commentID, err := r.service.Comments.CreateComment(ctx, &input)
 	if err != nil {
-		return 0, errors.New("mutationResolver.CreateComment():\n" + err.Error())
+		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreateComment():\n" + err.Error()))
 	}
 
 	mu := sync.Mutex{}
@@ -66,7 +65,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (int, error) {
 	userID, err := r.service.Auth.Register(ctx, &input)
 	if err != nil {
-		return 0, errors.New("mutationResolver.CreateUser():\n" + err.Error())
+		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreateUser():\n" + err.Error()))
 	}
 	return userID, nil
 }
@@ -75,7 +74,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 func (r *mutationResolver) ClosePost(ctx context.Context, postID int) (bool, error) {
 	isClosed, err := r.service.Posts.ClosePost(ctx, postID)
 	if err != nil {
-		return false, errors.New("mutationResolver.ClosePost():\n" + err.Error())
+		return false, grapherrors.TransformError(errors.New("mutationResolver.ClosePost():\n" + err.Error()))
 	}
 	return isClosed, nil
 }
@@ -84,33 +83,40 @@ func (r *mutationResolver) ClosePost(ctx context.Context, postID int) (bool, err
 func (r *queryResolver) Posts(ctx context.Context, input model.Pagination) ([]*model.Post, error) {
 	posts, err := r.service.Posts.GetPosts(ctx, &input)
 	if err != nil {
-		return nil, errors.New("queryResolver.Posts():\n" + err.Error())
+		return nil, grapherrors.TransformError(errors.New("queryResolver.Posts():\n" + err.Error()))
 	}
-	return posts, err
+	return posts, nil
 }
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model.Post, error) {
 	comments, err := r.service.Comments.GetComments(ctx, postID)
 	if err != nil {
-		return nil, errors.New("queryResolver.Post():\n" + err.Error())
+		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
 	}
 
 	r.ps.LoadPost(comments, postID) //cache
 
 	post, err := r.service.Posts.GetPost(ctx, postID)
 	if err != nil {
-		return nil, errors.New("queryResolver.Post():\n" + err.Error())
+		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
 	}
 
-	post.Comments = r.ps.PaginationComments(postID, 0, limit)
+	post.Comments, err = r.ps.PaginationComments(postID, 0, limit)
+	if err != nil {
+		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
+	}
 
 	return post, nil
 }
 
 // PaginationComment is the resolver for the paginationComment field.
 func (r *queryResolver) PaginationComment(ctx context.Context, postID int, pagination model.Pagination) ([]*model.Comment, error) {
-	return r.ps.PaginationComments(postID, pagination.Offset, pagination.Limit), nil
+	comments, err := r.ps.PaginationComments(postID, pagination.Offset, pagination.Limit)
+	if err != nil {
+		return nil, grapherrors.TransformError(errors.New("queryResolver.PaginationComment():\n" + err.Error()))
+	}
+	return comments, nil
 }
 
 // Users is the resolver for the users field.

@@ -10,7 +10,9 @@ import (
 	loaders "github.com/eeQuillibrium/posts/graph/loader"
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/internal/service"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "8080"
@@ -27,20 +29,9 @@ func (a *app) runHttpServer(service *service.Service, db *sqlx.DB) error {
 		Resolvers: graph.NewResolver(service, a.log, notifyChan)}))
 
 	srvLoader := loaders.Middleware(db, srv)
-	srvLoader.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
-		err := graphql.DefaultErrorPresenter(ctx, e)
-
-		var myErr *MyError
-		if errors.As(e, &myErr) {
-			err.Message = "Eeek!"
-		}
-
-		return err
-	})
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srvLoader)
 
 	a.log.Infof("connect to http://localhost:%s/ for GraphQL playground", port)
-	a.log.Infof("asdsa")
 	return http.ListenAndServe(":"+port, nil)
 }
