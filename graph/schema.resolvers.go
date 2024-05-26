@@ -6,25 +6,47 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/eeQuillibrium/posts/graph/model"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // Comments is the resolver for the comments field.
 func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*model.Comment, error) {
-	return r.service.Comments.GetByComment(ctx, obj.ID)
+	comments, err := r.service.Comments.GetByComment(ctx, obj.ID)
+	if err != nil {
+		return nil, errors.New("commentResolver.Comments():\n" + err.Error())
+	}
+	return comments, nil
 }
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (int, error) {
-	return r.service.Posts.CreatePost(ctx, &input)
+	postID, err := r.service.Posts.CreatePost(ctx, &input)
+	if err != nil {
+		return 0, errors.New("mutationResolver.CreatePost():\n" + err.Error())
+	}
+	return postID, nil
 }
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (int, error) {
+	commentID, err := r.service.Comments.CreateComment(ctx, &input)
+	if err != nil {
+		return 0, &gqlerror.Error{
+			Path:    graphql.GetPath(ctx),
+			Message: "mutationResolver.CreateComment():\n" + err.Error(),
+		}
+	}
+
+	mu := sync.Mutex{}
 	go func() {
+		defer mu.Unlock()
 		for {
 			select { //ждем 5 секунд на чтение из Notifications resolver
 			case <-time.After(5 * time.Second):
@@ -36,40 +58,56 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 				return
 			}
 		}
+
 	}()
-	return r.service.Comments.CreateComment(ctx, &input)
+	mu.Lock()
+
+	return commentID, nil
 }
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (int, error) {
-	return r.service.Auth.Register(ctx, &input)
+	userID, err := r.service.Auth.Register(ctx, &input)
+	if err != nil {
+		return 0, errors.New("mutationResolver.CreateUser():\n" + err.Error())
+	}
+	return userID, nil
 }
 
 // ClosePost is the resolver for the closePost field.
 func (r *mutationResolver) ClosePost(ctx context.Context, postID int) (bool, error) {
-	return r.service.Posts.ClosePost(ctx, postID)
+	isClosed, err := r.service.Posts.ClosePost(ctx, postID)
+	if err != nil {
+		return false, errors.New("mutationResolver.ClosePost():\n" + err.Error())
+	}
+	return isClosed, nil
 }
 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context, input model.Pagination) ([]*model.Post, error) {
-	return r.service.Posts.GetPosts(ctx, &input)
+	posts, err := r.service.Posts.GetPosts(ctx, &input)
+	if err != nil {
+		return nil, errors.New("queryResolver.Posts():\n" + err.Error())
+	}
+	return posts, err
 }
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model.Post, error) {
 	comments, err := r.service.Comments.GetComments(ctx, postID)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("queryResolver.Post():\n" + err.Error())
 	}
 
 	r.ps.LoadPost(comments, postID) //cache
 
 	post, err := r.service.Posts.GetPost(ctx, postID)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("queryResolver.Post():\n" + err.Error())
 	}
+
 	post.Comments = r.ps.PaginationComments(postID, 0, limit)
-	//post.Comments = comments
+
 	return post, nil
 }
 

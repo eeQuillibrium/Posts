@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/graph/model"
@@ -9,7 +10,7 @@ import (
 	"github.com/eeQuillibrium/posts/pkg/logger"
 )
 
-type comments struct {
+type commentsService struct {
 	log  *logger.Logger
 	cfg  *config.Config
 	repo repository.Comments
@@ -20,30 +21,42 @@ func NewCommentsService(
 	cfg *config.Config,
 	repo repository.Comments,
 ) Comments {
-	return &comments{
+	return &commentsService{
 		log:  log,
 		cfg:  cfg,
 		repo: repo,
 	}
 }
 
-func (s *comments) CreateComment(
+func (s *commentsService) CreateComment(
 	ctx context.Context,
 	comment *model.NewComment,
 ) (int, error) {
-	return s.repo.CreateComment(ctx, comment)
+	commentID, err := s.repo.CreateComment(ctx, comment)
+	if err != nil {
+		return 0, errors.New("commentsService.CreateComment():\n" + err.Error())
+	}
+	return commentID, nil
 }
 
-func (s *comments) GetComments(
+func (s *commentsService) GetComments(
 	ctx context.Context,
 	postID int,
 ) ([]*model.Comment, error) {
-	return s.repo.GetComments(ctx, postID)
+	comments, err := s.repo.GetComments(ctx, postID)
+	if err != nil {
+		return nil, errors.New("commentsService.GetComments():\n"+ err.Error())
+	}
+	return comments, nil
 }
 
-func (s *comments) GetByComment(
+func (s *commentsService) GetByComment(
 	ctx context.Context,
 	commentID int,
 ) ([]*model.Comment, error) {
-	return s.repo.GetByComment(ctx, commentID)
+	comments, err := s.repo.GetByComment(ctx, commentID)
+	if err != nil {
+		return nil, errors.New("commentsService.GetByComment():\n"+ err.Error())
+	}
+	return comments, nil
 }

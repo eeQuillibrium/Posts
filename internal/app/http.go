@@ -31,5 +31,6 @@ func (a *app) runHttpServer(service *service.Service, db *sqlx.DB) error {
 	http.Handle("/query", srvLoader)
 
 	a.log.Infof("connect to http://localhost:%s/ for GraphQL playground", port)
+	a.log.Infof("asdsa")
 	return http.ListenAndServe(":"+port, nil)
 }

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type auth struct {
+type authService struct {
 	log  *logger.Logger
 	cfg  *config.Config
 	repo repository.Auth
@@ -22,9 +22,9 @@ func NewAuthService(
 	cfg *config.Config,
 	repo repository.Auth,
 ) Auth {
-	return &auth{log: log, cfg: cfg, repo: repo}
+	return &authService{log: log, cfg: cfg, repo: repo}
 }
-func (s *auth) Register(
+func (s *authService) Register(
 	ctx context.Context,
 	user *model.NewUser,
 ) (int, error) {
@@ -34,16 +34,17 @@ func (s *auth) Register(
 
 	passhash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 5)
 	if err != nil {
-		return 0, errors.New("Register(): " + err.Error())
+		return 0, errors.New("authService.Register():\n" + err.Error())
 	}
 
 	userID, err := s.repo.Register(ctx, user.Login, passhash, user.Name)
 	if err != nil {
-		return 0, errors.New("repo.Register(): " + err.Error())
+		return 0, errors.New("authService.Register():\n" + err.Error())
 	}
 
 	return userID, nil
 }
+/*
 func (s *auth) Login(
 	ctx context.Context,
 	user *model.User,
@@ -61,3 +62,4 @@ func (s *auth) Login(
 	//return jwt.GenerateToken(ctx, entityUser.ID, tokenTTL)
 	return nil, nil
 }
+*/
