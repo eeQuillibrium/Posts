@@ -2,7 +2,6 @@ package service_mocks
 
 import (
 	"context"
-	"testing"
 
 	"github.com/eeQuillibrium/posts/graph/model"
 )
@@ -15,5 +14,58 @@ func (r *MockAuthRepository) Register(
 ) (int, error) {
 	return 1, nil
 }
-func TestRegister(t *testing.T) {
+
+type MockPostsRepository struct{}
+
+func (s *MockPostsRepository) CreatePost(
+	ctx context.Context,
+	post *model.NewPost,
+) (int, error) {
+	return 1, nil
+}
+func (s *MockPostsRepository) ClosePost(
+	ctx context.Context,
+	postID int,
+) (bool, error) {
+	return true, nil
+}
+func (s *MockPostsRepository) GetPosts(
+	ctx context.Context,
+	getPost *model.Pagination,
+) ([]*model.Post, error) {
+	return nil, nil
+}
+func (s *MockPostsRepository) GetPost(
+	ctx context.Context,
+	postID int,
+) (*model.Post, error) {
+	return nil, nil
+}
+
+type CommentsNode struct {
+	comments []*model.Comment
+	child *CommentsNode
+}
+type MockCommentsRepository struct{
+	root *CommentsNode
+}
+
+
+func (s *MockCommentsRepository) CreateComment(
+	ctx context.Context,
+	comment *model.NewComment,
+) (int, error) {
+	return 1, nil
+}
+func (s *MockCommentsRepository) GetComments(
+	ctx context.Context,
+	postID int,
+) ([]*model.Comment, error) {
+	return nil, nil
+}
+func (s *MockCommentsRepository) GetByComment(
+	ctx context.Context,
+	commentID int,
+) ([]*model.Comment, error) {
+	return nil, nil
 }

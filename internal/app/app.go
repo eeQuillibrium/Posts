@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,28 +37,28 @@ func NewApp(
 func (a *app) Run() error {
 	ctx, cancel := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
-		a.cfg.PostgresDB.Host, a.cfg.PostgresDB.Port, a.cfg.PostgresDB.Username, a.cfg.PostgresDB.DBName, os.Getenv("DB_PASSWORD"), a.cfg.PostgresDB.SSLMode)
-	db, err := sqlx.ConnectContext(ctx, "postgres", dsn)
+
+	db, err := sqlx.ConnectContext(ctx, "postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
+		a.cfg.PostgresDB.Host, a.cfg.PostgresDB.Port, a.cfg.PostgresDB.Username, a.cfg.PostgresDB.DBName, os.Getenv("DB_PASSWORD"), a.cfg.PostgresDB.SSLMode))
 	if err != nil {
-		return errors.New("postgres db connect: " + err.Error())
+		return errors.New("app.Run(): " + err.Error())
 	}
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
-		log.Fatal(err)
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
 	}
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://migrations",
 		"postgres", driver)
 	if err != nil {
-		log.Fatal(err)
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
 	}
 	defer m.Close()
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		log.Fatal(err)
+		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
 	}
 
 	repo := repository.NewRepository(a.log, a.cfg, db)
@@ -67,7 +66,7 @@ func (a *app) Run() error {
 
 	go func() {
 		if err := a.runHttpServer(services, db); err != nil {
-			a.log.Warnf("runHttpServer(): %v", err)
+			a.log.Fatalf("runHttpServer(): %v", err)
 		}
 		cancel()
 	}()

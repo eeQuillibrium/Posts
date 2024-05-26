@@ -10,7 +10,9 @@ import (
 	loaders "github.com/eeQuillibrium/posts/graph/loader"
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/internal/service"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "8080"

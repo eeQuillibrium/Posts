@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/graph/model"
@@ -9,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type auth struct {
+type authRepository struct {
 	log *logger.Logger
 	cfg *config.Config
 	db  *sqlx.DB
@@ -20,14 +21,14 @@ func NewAuthRepository(
 	cfg *config.Config,
 	db *sqlx.DB,
 ) Auth {
-	return &auth{
+	return &authRepository{
 		log: log,
 		cfg: cfg,
 		db:  db,
 	}
 }
 
-func (r *auth) Register(
+func (r *authRepository) Register(
 	ctx context.Context,
 	login string,
 	passhash []byte,
@@ -38,10 +39,12 @@ func (r *auth) Register(
 
 	var userID int
 	err := row.Scan(&userID)
-
-	return userID, err
+	if err != nil {
+		return 0, errors.New("authRepository.Register(): " + err.Error())
+	}
+	return userID, nil
 }
-func (r *auth) Login(
+func (r *authRepository) Login(
 	ctx context.Context,
 	login string,
 	passhash string,
@@ -49,6 +52,9 @@ func (r *auth) Login(
 	user := model.User{}
 
 	err := r.db.GetContext(ctx, &user, "SELECT * FROM Users WHERE login=$1", login)
+	if err != nil {
+		return nil, errors.New("authRepository.Login(): " + err.Error())
+	}
 
 	return &user, err
 }

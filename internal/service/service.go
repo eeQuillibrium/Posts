@@ -8,6 +8,8 @@ import (
 	"github.com/eeQuillibrium/posts/internal/repository"
 	"github.com/eeQuillibrium/posts/pkg/logger"
 )
+//go:generate mockgen -source=service.go -destination=mocks/mock.go
+
 
 type Comments interface {
 	CreateComment(
