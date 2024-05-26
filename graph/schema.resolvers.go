@@ -38,10 +38,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (int, error) {
 	commentID, err := r.service.Comments.CreateComment(ctx, &input)
 	if err != nil {
-		return 0, &gqlerror.Error{
-			Path:    graphql.GetPath(ctx),
-			Message: "mutationResolver.CreateComment():\n" + err.Error(),
-		}
+		return 0, errors.New("mutationResolver.CreateComment():\n" + err.Error())
 	}
 
 	mu := sync.Mutex{}
