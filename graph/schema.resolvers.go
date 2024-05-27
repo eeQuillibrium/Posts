@@ -17,7 +17,17 @@ import (
 
 // Comments is the resolver for the comments field.
 func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*model.Comment, error) {
-	comments, err := r.service.Comments.GetByComment(ctx, obj.ID)
+	var (
+		comments []*model.Comment
+		err error
+	)
+
+	if r.storageMode == "POSTGRES" {
+		comments, err = r.service.Comments.GetByComment(ctx, obj.ID)
+	} else {
+		comments, err = r.st.Comments.GetByComment(ctx, obj.ID)
+	}
+
 	if err != nil {
 		return nil, grapherrors.TransformError(errors.New("commentResolver.Comments():\n" + err.Error()))
 	}
@@ -95,14 +105,14 @@ func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model
 		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
 	}
 
-	r.ps.LoadPost(comments, postID) //cache
+	r.pc.LoadPost(comments, postID) //cache
 
 	post, err := r.service.Posts.GetPost(ctx, postID)
 	if err != nil {
 		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
 	}
 
-	post.Comments, err = r.ps.PaginationComments(postID, 0, limit)
+	post.Comments, err = r.pc.PaginationComments(postID, 0, limit)
 	if err != nil {
 		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
 	}
@@ -112,7 +122,7 @@ func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model
 
 // PaginationComment is the resolver for the paginationComment field.
 func (r *queryResolver) PaginationComment(ctx context.Context, postID int, pagination model.Pagination) ([]*model.Comment, error) {
-	comments, err := r.ps.PaginationComments(postID, pagination.Offset, pagination.Limit)
+	comments, err := r.pc.PaginationComments(postID, pagination.Offset, pagination.Limit)
 	if err != nil {
 		return nil, grapherrors.TransformError(errors.New("queryResolver.PaginationComment():\n" + err.Error()))
 	}

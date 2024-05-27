@@ -52,7 +52,7 @@ func TestCreateUser(t *testing.T) {
 			notifyChan := make(chan *model.Notification)
 			defer close(notifyChan)
 
-			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan)})))
+			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan, nil)})))
 
 			cl.MustPost(test.q, &test.output)
 
@@ -100,7 +100,7 @@ func TestCreatePost(t *testing.T) {
 			notifyChan := make(chan *model.Notification)
 			defer close(notifyChan)
 
-			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan)})))
+			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan, nil)})))
 
 			cl.MustPost(test.q, &test.output)
 
@@ -148,7 +148,7 @@ func TestCreateComment(t *testing.T) {
 			services := &service.Service{Comments: repo}
 			notifyChan := make(chan *model.Notification)
 
-			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan)})))
+			cl := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: NewResolver(services, logger.NewLogger(), notifyChan, nil)})))
 
 			cl.MustPost(test.q, &test.output)
 

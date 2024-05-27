@@ -31,13 +31,13 @@ func NewCommentsRepository(
 	}
 }
 
-func (r *commentsRepository) CreateComment(
+func (cr *commentsRepository) CreateComment(
 	ctx context.Context,
 	comment *model.NewComment,
 ) (int, error) {
 	var isClosed bool
 	
-	if err := r.db.GetContext(ctx, &isClosed, "SELECT is_closed FROM Posts WHERE id = $1",
+	if err := cr.db.GetContext(ctx, &isClosed, "SELECT is_closed FROM Posts WHERE id = $1",
 		comment.PostID); err != nil {
 		return 0, errors.New("commentsRepository.CreateComment(): " + err.Error())
 	}
@@ -45,7 +45,7 @@ func (r *commentsRepository) CreateComment(
 		return 0, errors.New("commentsRepository.CreateComment():" +  "post is closed by author")
 	}
 
-	row := r.db.QueryRowxContext(ctx, "INSERT INTO Comments (user_id, post_id, parent_id, text, level, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+	row := cr.db.QueryRowxContext(ctx, "INSERT INTO Comments (user_id, post_id, parent_id, text, level, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
 		comment.UserID, comment.PostID, comment.ParentID, comment.Text, comment.Level, time.Now())
 
 	var postID int

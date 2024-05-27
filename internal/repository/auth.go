@@ -28,13 +28,13 @@ func NewAuthRepository(
 	}
 }
 
-func (r *authRepository) Register(
+func (ar *authRepository) Register(
 	ctx context.Context,
 	login string,
 	passhash []byte,
 	name string,
 ) (int, error) {
-	row := r.db.QueryRowContext(ctx, "INSERT INTO Users (name, login, passhash)"+
+	row := ar.db.QueryRowContext(ctx, "INSERT INTO Users (name, login, passhash)"+
 		"VALUES ($1, $2, $3) RETURNING id", name, login, passhash)
 
 	var userID int
@@ -44,14 +44,14 @@ func (r *authRepository) Register(
 	}
 	return userID, nil
 }
-func (r *authRepository) Login(
+func (ar *authRepository) Login(
 	ctx context.Context,
 	login string,
 	passhash string,
 ) (*model.User, error) {
 	user := model.User{}
 
-	err := r.db.GetContext(ctx, &user, "SELECT * FROM Users WHERE login=$1", login)
+	err := ar.db.GetContext(ctx, &user, "SELECT * FROM Users WHERE login=$1", login)
 	if err != nil {
 		return nil, errors.New("authRepository.Login(): " + err.Error())
 	}

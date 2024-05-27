@@ -28,33 +28,33 @@ func NewCommentsService(
 	}
 }
 
-func (s *commentsService) CreateComment(
+func (cs *commentsService) CreateComment(
 	ctx context.Context,
 	comment *model.NewComment,
 ) (int, error) {
-	commentID, err := s.repo.CreateComment(ctx, comment)
+	commentID, err := cs.repo.CreateComment(ctx, comment)
 	if err != nil {
 		return 0, errors.New("commentsService.CreateComment():\n" + err.Error())
 	}
 	return commentID, nil
 }
 
-func (s *commentsService) GetComments(
+func (cs *commentsService) GetComments(
 	ctx context.Context,
 	postID int,
 ) ([]*model.Comment, error) {
-	comments, err := s.repo.GetComments(ctx, postID)
+	comments, err := cs.repo.GetComments(ctx, postID)
 	if err != nil {
 		return nil, errors.New("commentsService.GetComments():\n"+ err.Error())
 	}
 	return comments, nil
 }
 
-func (s *commentsService) GetByComment(
+func (cs *commentsService) GetByComment(
 	ctx context.Context,
 	commentID int,
 ) ([]*model.Comment, error) {
-	comments, err := s.repo.GetByComment(ctx, commentID)
+	comments, err := cs.repo.GetByComment(ctx, commentID)
 	if err != nil {
 		return nil, errors.New("commentsService.GetByComment():\n"+ err.Error())
 	}

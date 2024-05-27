@@ -32,7 +32,6 @@ type Query {
   posts(input: Pagination!): [Post!]!
   post(postId: Int!, limit: Int!): Post!
   paginationComment(postId: Int!, pagination: Pagination!): [Comment]!
-  users: [User!]!
 }
 
 input NewPost {

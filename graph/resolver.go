@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"os"
+
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/graph/storage"
 	"github.com/eeQuillibrium/posts/internal/service"
@@ -10,23 +12,27 @@ import (
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
-
 type Resolver struct {
-	service    *service.Service
-	log        *logger.Logger
-	ps         *storage.PostStorage
-	notifyChan chan *model.Notification
+	service     *service.Service
+	log         *logger.Logger
+	pc          *storage.PostCacheStorage
+	notifyChan  chan *model.Notification
+	storageMode string // POSTGRES/INMEMORY
+	st          *storage.Storage
 }
 
 func NewResolver(
 	service *service.Service,
 	log *logger.Logger,
 	notifyChan chan *model.Notification,
+	st *storage.Storage,
 ) *Resolver {
 	return &Resolver{
-		service:    service,
-		log:        log,
-		ps:         storage.NewPostStorage(),
-		notifyChan: notifyChan,
+		service:     service,
+		log:         log,
+		pc:          storage.NewPostCacheStorage(),
+		notifyChan:  notifyChan,
+		storageMode: os.Getenv("STORAGE_MODE"),
+		st:          st,
 	}
 }

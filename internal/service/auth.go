@@ -24,7 +24,7 @@ func NewAuthService(
 ) Auth {
 	return &authService{log: log, cfg: cfg, repo: repo}
 }
-func (s *authService) Register(
+func (as *authService) Register(
 	ctx context.Context,
 	user *model.NewUser,
 ) (int, error) {
@@ -37,7 +37,7 @@ func (s *authService) Register(
 		return 0, errors.New("authService.Register():\n" + err.Error())
 	}
 
-	userID, err := s.repo.Register(ctx, user.Login, passhash, user.Name)
+	userID, err := as.repo.Register(ctx, user.Login, passhash, user.Name)
 	if err != nil {
 		return 0, errors.New("authService.Register():\n" + err.Error())
 	}

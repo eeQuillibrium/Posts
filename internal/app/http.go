@@ -9,6 +9,7 @@ import (
 	"github.com/eeQuillibrium/posts/graph"
 	loaders "github.com/eeQuillibrium/posts/graph/loader"
 	"github.com/eeQuillibrium/posts/graph/model"
+	"github.com/eeQuillibrium/posts/graph/storage"
 	"github.com/eeQuillibrium/posts/internal/service"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
@@ -25,8 +26,10 @@ func (a *app) runHttpServer(service *service.Service, db *sqlx.DB) error {
 	notifyChan := make(chan *model.Notification)
 	defer close(notifyChan)
 
+	st := storage.NewStorage()
+
 	var srv http.Handler = handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{
-		Resolvers: graph.NewResolver(service, a.log, notifyChan)}))
+		Resolvers: graph.NewResolver(service, a.log, notifyChan, st)}))
 
 	srvLoader := loaders.Middleware(db, srv)
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))

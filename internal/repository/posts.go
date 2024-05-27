@@ -30,12 +30,12 @@ func NewPostsRepository(
 	}
 }
 
-func (r *postsRepository) CreatePost(
+func (pr *postsRepository) CreatePost(
 	ctx context.Context,
 	Post *model.NewPost,
 ) (int, error) {
 
-	row := r.db.QueryRowxContext(ctx, "INSERT INTO Posts (user_id, text, header, created_at, is_closed) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+	row := pr.db.QueryRowxContext(ctx, "INSERT INTO Posts (user_id, text, header, created_at, is_closed) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		Post.UserID, Post.Text, Post.Header, time.Now(), false)
 
 	var PostID int
@@ -46,21 +46,21 @@ func (r *postsRepository) CreatePost(
 	return PostID, nil
 }
 
-func (r *postsRepository) GetPosts(
+func (pr *postsRepository) GetPosts(
 	ctx context.Context,
 	offset int,
 	limit int,
 ) ([]*model.Post, error) {
 	posts := []*model.Post{}
 
-	if err := r.db.SelectContext(ctx, &posts, "SELECT * FROM Posts ORDER BY id desc LIMIT $1 OFFSET $2",
+	if err := pr.db.SelectContext(ctx, &posts, "SELECT * FROM Posts ORDER BY id desc LIMIT $1 OFFSET $2",
 		limit, offset); err != nil {
 		return nil, errors.New("postsRepository.GetPosts(): " + err.Error())
 	}
 
 	return posts, nil
 }
-func (r *postsRepository) ClosePost(
+func (pr *postsRepository) ClosePost(
 	ctx context.Context,
 	postID int,
 ) (bool, error) {
@@ -70,20 +70,20 @@ func (r *postsRepository) ClosePost(
 	WHERE id = $1;
 	`
 
-	_, err := r.db.ExecContext(ctx, q, postID, true)
+	_, err := pr.db.ExecContext(ctx, q, postID, true)
 	if err != nil {
 		return false, errors.New("postsRepository.ClosePost(): " + err.Error())
 	}
 
 	return true, nil
 }
-func (r *postsRepository) GetPost(
+func (pr *postsRepository) GetPost(
 	ctx context.Context,
 	postID int,
 ) (*model.Post, error) {
 	post := model.Post{}
 
-	if err := r.db.GetContext(ctx, &post, "SELECT * FROM Posts WHERE id = $1",
+	if err := pr.db.GetContext(ctx, &post, "SELECT * FROM Posts WHERE id = $1",
 		postID); err != nil {
 		return nil, errors.New("postsRepository.GetPost(): " + err.Error())
 	}

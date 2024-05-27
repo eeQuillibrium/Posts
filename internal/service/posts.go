@@ -28,43 +28,43 @@ func NewPostsService(
 	}
 }
 
-func (s *postsService) CreatePost(
+func (ps *postsService) CreatePost(
 	ctx context.Context,
 	post *model.NewPost,
 ) (int, error) {
-	postID, err := s.repo.CreatePost(ctx, post)
+	postID, err := ps.repo.CreatePost(ctx, post)
 	if err != nil {
 		return 0, errors.New("commentsService.CreatePost():\n" + err.Error())
 	}
 	return postID, nil
 }
 
-func (s *postsService) GetPosts(
+func (ps *postsService) GetPosts(
 	ctx context.Context,
 	getPost *model.Pagination,
 ) ([]*model.Post, error) {
-	posts, err := s.repo.GetPosts(ctx, getPost.Offset, getPost.Limit)
+	posts, err := ps.repo.GetPosts(ctx, getPost.Offset, getPost.Limit)
 	if err != nil {
 		return nil, errors.New("postsService.GetPosts():\n" + err.Error())
 	}
 	return posts, nil
 }
-func (s *postsService) GetPost(
+func (ps *postsService) GetPost(
 	ctx context.Context,
 	postID int,
 ) (*model.Post, error) {
-	post, err := s.repo.GetPost(ctx, postID)
+	post, err := ps.repo.GetPost(ctx, postID)
 	if err != nil {
 		return nil, errors.New("postsService.GetPost():\n" + err.Error())
 	}
 	return post, nil
 }
 
-func (s *postsService) ClosePost(
+func (ps *postsService) ClosePost(
 	ctx context.Context,
 	postID int,
 ) (bool, error) {
-	isClosed, err := s.repo.ClosePost(ctx, postID)
+	isClosed, err := ps.repo.ClosePost(ctx, postID)
 	if err != nil {
 		return false, errors.New("postsService.ClosePost():\n" + err.Error())
 	}

@@ -36,6 +36,7 @@ func NewApp(
 
 func (a *app) Run() error {
 	ctx, cancel := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM)
+	
 	defer cancel()
 
 	db, err := sqlx.ConnectContext(ctx, "postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",

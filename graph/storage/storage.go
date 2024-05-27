@@ -1,44 +1,68 @@
 package storage
 
 import (
-	"errors"
-	"fmt"
-	"sync"
+	"context"
 
 	"github.com/eeQuillibrium/posts/graph/model"
 )
 
-type PostStorage struct {
-	mu sync.Mutex
-	pc map[int][]*model.Comment
+type Comments interface {
+	CreateComment(
+		ctx context.Context,
+		comment *model.NewComment,
+	) (int, error)
+	GetComments(
+		ctx context.Context,
+		postID int,
+	) ([]*model.Comment, error)
+	GetByComment(
+		ctx context.Context,
+		commentID int,
+	) ([]*model.Comment, error)
+}
+type Posts interface {
+	CreatePost(
+		ctx context.Context,
+		post *model.NewPost,
+	) (int, error)
+	ClosePost(
+		ctx context.Context,
+		postID int,
+	) (bool, error)
+	GetPosts(
+		ctx context.Context,
+		offset int,
+		limit int,
+	) ([]*model.Post, error)
+	GetPost(
+		ctx context.Context,
+		postID int,
+	) (*model.Post, error)
+}
+type Users interface {
+	CreateUser(
+		ctx context.Context,
+		user *model.NewUser,
+	) (int, error)
 }
 
-func NewPostStorage() *PostStorage {
-	return &PostStorage{
-		pc: make(map[int][]*model.Comment),
-	}
+type Storage struct {
+	Comments
+	Posts
+	Users
+	Mediator
 }
 
-func (s *PostStorage) LoadPost(comments []*model.Comment, postID int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func NewStorage() *Storage {
+	comments := NewCommentsStorage()
+	posts := NewPostsStorage()
+	users := NewUsersStorage()
+	mediator := NewStorageMediator(comments, posts, users)
 
-	s.pc[postID] = comments
-}
-func (s *PostStorage) PaginationComments(postID int, offset int, limit int) ([]*model.Comment, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.pc[postID]; !ok { //если не подгружен пост
-		return nil, errors.New("PostStorage.PaginationComments(): post with id:" +
-			fmt.Sprintf("%d", postID) + " didn't loaded, execute the queryResolver.PostStorage.LoadPost() before")
+	return &Storage{
+		Comments: comments,
+		Posts:    posts,
+		Users:    users,
+		Mediator: mediator,
 	}
-	if offset > len(s.pc[postID]) {
-		return nil, nil
-	}
-
-	if len(s.pc[postID]) > offset+limit {
-		return s.pc[postID][offset:limit], nil
-	}
-
-	return s.pc[postID][offset:], nil
 }
