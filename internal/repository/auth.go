@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/pkg/logger"
@@ -39,7 +39,7 @@ func (ar *authRepository) CreateUser(
 	var userID int
 	err := row.Scan(&userID)
 	if err != nil {
-		return 0, errors.New("authRepository.Register(): " + err.Error())
+		return 0, fmt.Errorf("authRepository.Register(): %w", err)
 	}
 	return userID, nil
 }

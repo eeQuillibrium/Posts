@@ -3,14 +3,18 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/eeQuillibrium/posts/config"
-	loaders "github.com/eeQuillibrium/posts/graph/loader"
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/pkg/logger"
 
 	"github.com/jmoiron/sqlx"
+)
+
+var (
+	errPostClosed = errors.New("post is closed by author")
 )
 
 type commentsRepository struct {
@@ -36,13 +40,13 @@ func (cr *commentsRepository) CreateComment(
 	comment *model.NewComment,
 ) (int, error) {
 	var isClosed bool
-	
+
 	if err := cr.db.GetContext(ctx, &isClosed, "SELECT is_closed FROM Posts WHERE id = $1",
 		comment.PostID); err != nil {
-		return 0, errors.New("commentsRepository.CreateComment(): " + err.Error())
+		return 0, fmt.Errorf("commentsRepository.CreateComment(): %w", err)
 	}
 	if isClosed {
-		return 0, errors.New("commentsRepository.CreateComment():" +  "post is closed by author")
+		return 0, fmt.Errorf("commentsRepository.CreateComment(): %w", errPostClosed)
 	}
 
 	row := cr.db.QueryRowxContext(ctx, "INSERT INTO Comments (user_id, post_id, parent_id, text, level, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
@@ -50,7 +54,7 @@ func (cr *commentsRepository) CreateComment(
 
 	var postID int
 	if err := row.Scan(&postID); err != nil {
-		return 0, errors.New("commentsRepository.CreateComment(): " + err.Error())
+		return 0, fmt.Errorf("commentsRepository.CreateComment(): %w", err)
 	}
 
 	return postID, nil
@@ -60,14 +64,14 @@ func (r *commentsRepository) GetComments(
 	ctx context.Context,
 	postID int,
 ) ([]*model.Comment, error) {
-	var commentIDs []int
+	var comments []*model.Comment
 
-	if err := r.db.SelectContext(ctx, &commentIDs, "SELECT id FROM Comments WHERE post_id = $1",
+	if err := r.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE post_id = $1",
 		postID); err != nil {
-		return nil, errors.New("commentsRepository.GetComments(): " + err.Error())
+		return nil, fmt.Errorf("commentsRepository.GetComments(): %w", err)
 	}
 
-	return loaders.GetComments(ctx, commentIDs)
+	return comments, nil
 }
 
 func (r *commentsRepository) GetByParentComment(
@@ -78,7 +82,7 @@ func (r *commentsRepository) GetByParentComment(
 
 	if err := r.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE parent_id = $1",
 		commentID); err != nil {
-		return nil, errors.New("commentsRepository.GetByComment(): " + err.Error())
+		return nil, fmt.Errorf("commentsRepository.GetByComment(): %w", err)
 	}
 
 	return comments, nil

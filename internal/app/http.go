@@ -7,7 +7,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/eeQuillibrium/posts/graph"
-	loaders "github.com/eeQuillibrium/posts/graph/loader"
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/graph/storage"
 	"github.com/eeQuillibrium/posts/internal/service"
@@ -31,9 +30,8 @@ func (a *app) runHttpServer(service *service.Service, db *sqlx.DB) error {
 	var srv http.Handler = handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{
 		Resolvers: graph.NewResolver(service, a.log, notifyChan, st)}))
 
-	srvLoader := loaders.Middleware(db, srv)
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srvLoader)
+	http.Handle("/query", srv)
 
 	a.log.Infof("connect to http://localhost:%s/ for GraphQL playground", port)
 	return http.ListenAndServe(":"+port, nil)

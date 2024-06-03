@@ -91,7 +91,7 @@ func (pr *postsRepository) GetPost(
 
 	if err := pr.db.QueryRowxContext(ctx, q, postID).Scan(&post); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("postsRepository.GetPost(): post with id = %d  doesn't exist", postID)
+			return nil, fmt.Errorf("postsRepository.GetPost(): post with id = %d doesn't exist", postID)
 		}
 		return nil, fmt.Errorf("postsRepository.GetPost(): %w", err)
 	}
