@@ -74,8 +74,8 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 	go func() {
 		defer wg.Done()
 		for {
-			select { //ждем 2 секунды на чтение из Notifications resolver
-			case <-time.After(2 * time.Second):
+			select { //ждем 10 мс на чтение из Notifications resolver
+			case <-time.After(10 * time.Millisecond):
 				return
 			case r.notifyChan <- &model.Notification{
 				Text:     input.Text,
@@ -202,7 +202,7 @@ func (r *subscriptionResolver) Notification(ctx context.Context, postID int) (<-
 	go func() {
 		defer close(ch)
 		for {
-			time.Sleep(2 * time.Millisecond)
+			time.Sleep(100 * time.Microsecond)
 			select {
 			case <-ctx.Done():
 				r.log.Info("Subscription Closed")
