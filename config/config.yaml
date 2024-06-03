@@ -2,7 +2,7 @@ app:
   port: 8080
 postgresDB:
   username: "postgres"
-  host: "postgres_db"
+  host: "localhost"
   port: 5432
   dbname: "postgres"
   sslmode: "disable"

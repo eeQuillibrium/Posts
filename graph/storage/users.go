@@ -2,13 +2,17 @@ package storage
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/eeQuillibrium/posts/graph/model"
 )
 
 const preparedUsersVolume = 10000
+
+var (
+	errNoUser = "user with this userID doesn't exist"
+)
 
 type usersStorage struct {
 	users    map[int]*model.User
@@ -49,7 +53,7 @@ func (us *usersStorage) isUserExist(userID int) error {
 	defer us.mu.Unlock()
 
 	if _, ok := us.users[userID]; !ok {
-		return errors.New("isUserExist(): user with this userID doesn't exist")
+		return fmt.Errorf("isUserExist(): %w", errNoUser)
 	}
 	return nil
 }

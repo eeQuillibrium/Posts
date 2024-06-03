@@ -8,8 +8,6 @@ import (
 	"github.com/eeQuillibrium/posts/internal/repository"
 	"github.com/eeQuillibrium/posts/pkg/logger"
 )
-//go:generate mockgen -source=service.go -destination=mocks/mock.go
-
 
 type Comments interface {
 	CreateComment(
@@ -20,19 +18,13 @@ type Comments interface {
 		ctx context.Context,
 		postID int,
 	) ([]*model.Comment, error)
-	GetByComment(
+	GetByParentComment(
 		ctx context.Context,
 		commentID int,
 	) ([]*model.Comment, error)
 }
 type Auth interface {
-	/*
-	Login(
-		ctx context.Context,
-		user *model.User,
-	) (*model.User, error)
-	*/
-	Register(
+	CreateUser(
 		ctx context.Context,
 		user *model.NewUser,
 	) (int, error)

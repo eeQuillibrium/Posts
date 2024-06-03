@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -15,21 +17,34 @@ const (
 	preparedLevelVolume    = 50
 )
 
+var (
+	errNoParent = errors.New("comment with this parentID doesn't exist")
+)
+
 // комментарии по level
 type commentNode struct {
 	child    *commentNode
-	comments map[int][]*model.Comment
+	comments map[int][]*model.Comment //parentID-childs
 }
 
 type commentsStorage struct {
-	comments     map[int]*model.Comment
-	commentsPost map[int][]*model.Comment
+	comments     map[int]*model.Comment   //commentID-comment
+	commentsPost map[int][]*model.Comment //postID-[]comment
 	idSerial     int
 	root         *commentNode
 	mu           *sync.Mutex
 	mediator     Mediator
 }
 
+func (cs *commentsStorage) Print() {
+	log.Println(cs.comments)
+	log.Println(cs.commentsPost)
+	curr := cs.root
+	for curr != nil {
+		log.Println(curr.comments)
+		curr = curr.child
+	}
+}
 func NewCommentsStorage() *commentsStorage {
 	return &commentsStorage{
 		mu:           &sync.Mutex{},
@@ -50,11 +65,11 @@ func (cs *commentsStorage) CreateComment(
 ) (int, error) {
 	if err := cs.mediator.Notify(eventIsPostExist + eventSeparator +
 		strconv.Itoa(newComment.PostID)); err != nil {
-		return 0, errors.New("commentsStorage.CreateComment():\n" + err.Error())
+		return 0, fmt.Errorf("commentsStorage.CreateComment():\n%w", err)
 	}
 	if newComment.ParentID != nil {
 		if _, ok := cs.comments[*newComment.ParentID]; !ok {
-			return 0, errors.New("commentsStorage.CreateComment(): " + "comment with this parentID doesn't exist")
+			return 0, fmt.Errorf("commentsStorage.CreateComment(): %w", errNoParent)
 		}
 	}
 
@@ -74,53 +89,54 @@ func (cs *commentsStorage) CreateComment(
 
 	cs.comments[cs.idSerial] = comment
 
-	if comment.Level == 1 {
-		cs.root.comments[0] = append(cs.root.comments[0], comment)
-		cs.idSerial++
-		return cs.idSerial, nil
-	}
+	cs.idSerial++
 
 	cs.commentsPost[comment.PostID] = append(cs.commentsPost[comment.PostID], comment)
 
+	if comment.Level == 1 {
+		cs.root.comments[0] = append(cs.root.comments[0], comment)
+		return comment.ID, nil
+	}
+
 	curr := cs.root
-	for i := 1; i < comment.Level; i++ {
+	for i := 1; i < comment.Level-1; i++ {
 		curr = curr.child
 	}
 
-	if curr == nil {
-		curr = &commentNode{
+	if curr.child == nil {
+		curr.child = &commentNode{
 			comments: make(map[int][]*model.Comment, preparedLevelVolume),
 		}
-		curr.comments[*comment.ParentID] = []*model.Comment{comment}
-		return cs.idSerial, nil
+		curr.child.comments[*comment.ParentID] = append(curr.child.comments[*comment.ParentID], comment)
+		return comment.ID, nil
 	}
 
-	(*curr).comments[*comment.ParentID] = append(curr.comments[*comment.ParentID], comment)
+	curr.child.comments[*comment.ParentID] = append(curr.child.comments[*comment.ParentID], comment)
 
-	return cs.idSerial, nil
+	return comment.ID, nil
 }
 
-func (cs *commentsStorage) GetComments(
+func (cs *commentsStorage) GetPostComments(
 	ctx context.Context,
 	postID int,
 ) ([]*model.Comment, error) {
 	if err := cs.mediator.Notify(eventIsPostExist + eventSeparator +
 		strconv.Itoa(postID)); err != nil {
-		return nil, errors.New("commentsStorage.CreateComment():\n" + err.Error())
+		return nil, fmt.Errorf("commentsStorage.CreateComment():\n%w", err)
 	}
 	return cs.commentsPost[postID], nil
 }
 
-func (cs *commentsStorage) GetByComment(
+func (cs *commentsStorage) GetChildLevel(
 	ctx context.Context,
-	commentID int,
+	parentID int,
 ) ([]*model.Comment, error) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
 	curr := cs.root
 
-	for i := 0; i < cs.comments[commentID].Level; i++ {
+	for i := 0; i < cs.comments[parentID].Level; i++ {
 		curr = curr.child
 	}
 
@@ -128,7 +144,5 @@ func (cs *commentsStorage) GetByComment(
 		return nil, nil
 	}
 
-	return curr.comments[commentID], nil
+	return curr.comments[parentID], nil
 }
-
-

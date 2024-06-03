@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/eeQuillibrium/posts/config"
-	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/pkg/logger"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,7 +27,7 @@ func NewAuthRepository(
 	}
 }
 
-func (ar *authRepository) Register(
+func (ar *authRepository) CreateUser(
 	ctx context.Context,
 	login string,
 	passhash []byte,
@@ -43,18 +42,4 @@ func (ar *authRepository) Register(
 		return 0, errors.New("authRepository.Register(): " + err.Error())
 	}
 	return userID, nil
-}
-func (ar *authRepository) Login(
-	ctx context.Context,
-	login string,
-	passhash string,
-) (*model.User, error) {
-	user := model.User{}
-
-	err := ar.db.GetContext(ctx, &user, "SELECT * FROM Users WHERE login=$1", login)
-	if err != nil {
-		return nil, errors.New("authRepository.Login(): " + err.Error())
-	}
-
-	return &user, err
 }

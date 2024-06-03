@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -10,6 +11,7 @@ const (
 	eventSeparator   = " "
 	eventIsUserExist = "a"
 	eventIsPostExist = "b"
+	eventGetComments = "c"
 )
 
 type Mediator interface {
@@ -57,20 +59,20 @@ func (ep *eventParts) InitEvent(eventSeparator string) error {
 func (sm *storageMediator) Notify(getEvent string) error {
 	parts := &eventParts{}
 	if err := parts.InitEvent(getEvent); err != nil {
-		return errors.New("storageMediator.Notify():\n" + err.Error())
+		return fmt.Errorf("storageMediator.Notify():\n %w", err)
 	}
 
 	switch parts.Event {
 	case eventIsUserExist:
 		userID, err := strconv.Atoi(parts.Value)
 		if err != nil {
-			return errors.New("storageMediator.Notify():" + err.Error())
+			return fmt.Errorf("storageMediator.Notify():\n %w", err)
 		}
 		return sm.us.isUserExist(userID)
 	case eventIsPostExist:
 		postID, err := strconv.Atoi(parts.Value)
 		if err != nil {
-			return errors.New("storageMediator.Notify():" + err.Error())
+			return fmt.Errorf("storageMediator.Notify():\n %w", err)
 		}
 		return sm.ps.isPostExist(postID)
 	}

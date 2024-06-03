@@ -21,12 +21,12 @@ type commentReader struct {
 }
 
 func (u *commentReader) getComments(ctx context.Context, commentIDs []int) ([]*model.Comment, []error) {
-	query, args, err := sqlx.In("SELECT * FROM Comments WHERE id IN (?)", commentIDs)
+	query, args, err := sqlx.In("SELECT * FROM Comments WHERE ", commentIDs)
 	if err != nil {
 		return nil, []error{err}
 	}
 	var comments []*model.Comment
-	
+
 	err = u.db.SelectContext(ctx, &comments, u.db.Rebind(query), args...)
 	if err != nil {
 		return comments, []error{err}

@@ -70,7 +70,7 @@ func (r *commentsRepository) GetComments(
 	return loaders.GetComments(ctx, commentIDs)
 }
 
-func (r *commentsRepository) GetByComment(
+func (r *commentsRepository) GetByParentComment(
 	ctx context.Context,
 	commentID int,
 ) ([]*model.Comment, error) {

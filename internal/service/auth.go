@@ -3,12 +3,17 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/graph/model"
 	"github.com/eeQuillibrium/posts/internal/repository"
 	"github.com/eeQuillibrium/posts/pkg/logger"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	errEmptyInput = errors.New("Register(): empty password or login")
 )
 
 type authService struct {
@@ -24,42 +29,23 @@ func NewAuthService(
 ) Auth {
 	return &authService{log: log, cfg: cfg, repo: repo}
 }
-func (as *authService) Register(
+func (as *authService) CreateUser(
 	ctx context.Context,
 	user *model.NewUser,
 ) (int, error) {
 	if user.Password == "" || user.Login == "" {
-		return 0, errors.New("Register(): empty password or login")
+		return 0, errEmptyInput
 	}
 
 	passhash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 5)
 	if err != nil {
-		return 0, errors.New("authService.Register():\n" + err.Error())
+		return 0, fmt.Errorf("authService.Register():\n%w", err)
 	}
 
-	userID, err := as.repo.Register(ctx, user.Login, passhash, user.Name)
+	userID, err := as.repo.CreateUser(ctx, user.Login, passhash, user.Name)
 	if err != nil {
-		return 0, errors.New("authService.Register():\n" + err.Error())
+		return 0, fmt.Errorf("authService.Register():\n%w", err)
 	}
 
 	return userID, nil
 }
-/*
-func (s *auth) Login(
-	ctx context.Context,
-	user *model.User,
-) (*model.User, error) {
-
-	entityUser, err := s.repo.Login(ctx, user.Login, user.Password)
-	if err != nil {
-		return nil, errors.New("repo.Login(): " + err.Error())
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(entityUser.Password), []byte(user.Password)); err != nil {
-		return nil, errors.New("Register() bcrypt.Compare(): " + err.Error())
-	}
-
-	//return jwt.GenerateToken(ctx, entityUser.ID, tokenTTL)
-	return nil, nil
-}
-*/

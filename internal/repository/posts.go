@@ -2,7 +2,8 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"database/sql"
+	"fmt"
 
 	"time"
 
@@ -40,7 +41,7 @@ func (pr *postsRepository) CreatePost(
 
 	var PostID int
 	if err := row.Scan(&PostID); err != nil {
-		return 0, errors.New("postsRepository.CreatePost(): " + err.Error())
+		return 0, fmt.Errorf("postsRepository.CreatePost(): %w", err)
 	}
 
 	return PostID, nil
@@ -55,7 +56,7 @@ func (pr *postsRepository) GetPosts(
 
 	if err := pr.db.SelectContext(ctx, &posts, "SELECT * FROM Posts ORDER BY id desc LIMIT $1 OFFSET $2",
 		limit, offset); err != nil {
-		return nil, errors.New("postsRepository.GetPosts(): " + err.Error())
+		return nil, fmt.Errorf("postsRepository.GetPosts(): %w", err)
 	}
 
 	return posts, nil
@@ -72,7 +73,7 @@ func (pr *postsRepository) ClosePost(
 
 	_, err := pr.db.ExecContext(ctx, q, postID, true)
 	if err != nil {
-		return false, errors.New("postsRepository.ClosePost(): " + err.Error())
+		return false, fmt.Errorf("postsRepository.ClosePost(): %w", err)
 	}
 
 	return true, nil
@@ -81,11 +82,18 @@ func (pr *postsRepository) GetPost(
 	ctx context.Context,
 	postID int,
 ) (*model.Post, error) {
-	post := model.Post{}
+	q := `
+	SELECT (user_id, text, header, created_at, is_closed)
+	FROM Posts
+	WHERE id = $1
+	`
+	var post model.Post
 
-	if err := pr.db.GetContext(ctx, &post, "SELECT * FROM Posts WHERE id = $1",
-		postID); err != nil {
-		return nil, errors.New("postsRepository.GetPost(): " + err.Error())
+	if err := pr.db.QueryRowxContext(ctx, q, postID).Scan(&post); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("postsRepository.GetPost(): post with id = %d  doesn't exist", postID)
+		}
+		return nil, fmt.Errorf("postsRepository.GetPost(): %w", err)
 	}
 
 	return &post, nil

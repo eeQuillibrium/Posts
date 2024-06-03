@@ -8,7 +8,7 @@ import (
 
 type MockAuthRepository struct{}
 
-func (r *MockAuthRepository) Register(
+func (r *MockAuthRepository) CreateUser(
 	ctx context.Context,
 	user *model.NewUser,
 ) (int, error) {
@@ -63,7 +63,7 @@ func (s *MockCommentsRepository) GetComments(
 ) ([]*model.Comment, error) {
 	return nil, nil
 }
-func (s *MockCommentsRepository) GetByComment(
+func (s *MockCommentsRepository) GetByParentComment(
 	ctx context.Context,
 	commentID int,
 ) ([]*model.Comment, error) {

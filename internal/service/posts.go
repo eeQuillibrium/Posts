@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/graph/model"
@@ -34,7 +34,7 @@ func (ps *postsService) CreatePost(
 ) (int, error) {
 	postID, err := ps.repo.CreatePost(ctx, post)
 	if err != nil {
-		return 0, errors.New("commentsService.CreatePost():\n" + err.Error())
+		return 0, fmt.Errorf("commentsService.CreatePost():\n%w", err)
 	}
 	return postID, nil
 }
@@ -45,7 +45,7 @@ func (ps *postsService) GetPosts(
 ) ([]*model.Post, error) {
 	posts, err := ps.repo.GetPosts(ctx, getPost.Offset, getPost.Limit)
 	if err != nil {
-		return nil, errors.New("postsService.GetPosts():\n" + err.Error())
+		return nil, fmt.Errorf("postsService.GetPosts():\n%w", err)
 	}
 	return posts, nil
 }
@@ -55,8 +55,9 @@ func (ps *postsService) GetPost(
 ) (*model.Post, error) {
 	post, err := ps.repo.GetPost(ctx, postID)
 	if err != nil {
-		return nil, errors.New("postsService.GetPost():\n" + err.Error())
+		return nil, fmt.Errorf("postsService.GetPost():\n%w", err)
 	}
+
 	return post, nil
 }
 
@@ -66,7 +67,7 @@ func (ps *postsService) ClosePost(
 ) (bool, error) {
 	isClosed, err := ps.repo.ClosePost(ctx, postID)
 	if err != nil {
-		return false, errors.New("postsService.ClosePost():\n" + err.Error())
+		return false, fmt.Errorf("postsService.ClosePost():\n%w", err)
 	}
 	return isClosed, nil
 }

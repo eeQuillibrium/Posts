@@ -11,13 +11,13 @@ type Comments interface {
 		ctx context.Context,
 		comment *model.NewComment,
 	) (int, error)
-	GetComments(
+	GetPostComments(
 		ctx context.Context,
 		postID int,
 	) ([]*model.Comment, error)
-	GetByComment(
+	GetChildLevel(
 		ctx context.Context,
-		commentID int,
+		parentID int,
 	) ([]*model.Comment, error)
 }
 type Posts interface {

@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -19,43 +18,64 @@ import (
 func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment) ([]*model.Comment, error) {
 	var (
 		comments []*model.Comment
-		err error
+		err      error
 	)
 
 	if r.storageMode == "POSTGRES" {
-		comments, err = r.service.Comments.GetByComment(ctx, obj.ID)
+		comments, err = r.service.Comments.GetByParentComment(ctx, obj.ID)
 	} else {
-		comments, err = r.st.Comments.GetByComment(ctx, obj.ID)
+		comments, err = r.st.Comments.GetChildLevel(ctx, obj.ID)
 	}
 
 	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("commentResolver.Comments():\n" + err.Error()))
+		return nil, grapherrors.TransformError(fmt.Errorf("commentResolver.Comments():\n %w", err))
 	}
+
 	return comments, nil
 }
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (int, error) {
-	postID, err := r.service.Posts.CreatePost(ctx, &input)
-	if err != nil {
-		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreatePost():\n" + err.Error()))
+	var (
+		postID int
+		err    error
+	)
+	if r.storageMode == "POSTGRES" {
+		postID, err = r.service.Posts.CreatePost(ctx, &input)
+	} else {
+		postID, err = r.st.Posts.CreatePost(ctx, &input)
 	}
+
+	if err != nil {
+		return 0, grapherrors.TransformError(fmt.Errorf("mutationResolver.CreatePost():\n %w", err))
+	}
+
 	return postID, nil
 }
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewComment) (int, error) {
-	commentID, err := r.service.Comments.CreateComment(ctx, &input)
-	if err != nil {
-		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreateComment():\n" + err.Error()))
+	var (
+		commentID int
+		err       error
+	)
+	if r.storageMode == "POSTGRES" {
+		commentID, err = r.service.Comments.CreateComment(ctx, &input)
+	} else {
+		commentID, err = r.st.Comments.CreateComment(ctx, &input)
 	}
 
-	mu := sync.Mutex{}
+	if err != nil {
+		return 0, grapherrors.TransformError(fmt.Errorf("mutationResolver.CreateComment():\n %w", err))
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		defer mu.Unlock()
+		defer wg.Done()
 		for {
-			select { //ждем 5 секунд на чтение из Notifications resolver
-			case <-time.After(5 * time.Second):
+			select { //ждем 2 секунды на чтение из Notifications resolver
+			case <-time.After(2 * time.Second):
 				return
 			case r.notifyChan <- &model.Notification{
 				Text:     input.Text,
@@ -64,57 +84,98 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 				return
 			}
 		}
-
 	}()
-	mu.Lock()
+	wg.Wait()
 
 	return commentID, nil
 }
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (int, error) {
-	userID, err := r.service.Auth.Register(ctx, &input)
-	if err != nil {
-		return 0, grapherrors.TransformError(errors.New("mutationResolver.CreateUser():\n" + err.Error()))
+	var (
+		userID int
+		err    error
+	)
+	if r.storageMode == "POSTGRES" {
+		userID, err = r.service.Auth.CreateUser(ctx, &input)
+	} else {
+		userID, err = r.st.Users.CreateUser(ctx, &input)
 	}
+
+	if err != nil {
+		return 0, grapherrors.TransformError(fmt.Errorf("mutationResolver.CreateUser():\n %w", err))
+	}
+
 	return userID, nil
 }
 
 // ClosePost is the resolver for the closePost field.
 func (r *mutationResolver) ClosePost(ctx context.Context, postID int) (bool, error) {
-	isClosed, err := r.service.Posts.ClosePost(ctx, postID)
+	var (
+		isClosed bool
+		err      error
+	)
+	if r.storageMode == "POSTGRES" {
+		isClosed, err = r.service.Posts.ClosePost(ctx, postID)
+	} else {
+		isClosed, err = r.st.Posts.ClosePost(ctx, postID)
+	}
+
 	if err != nil {
-		return false, grapherrors.TransformError(errors.New("mutationResolver.ClosePost():\n" + err.Error()))
+		return false, grapherrors.TransformError(fmt.Errorf("mutationResolver.ClosePost():\n %w", err))
 	}
 	return isClosed, nil
 }
 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context, input model.Pagination) ([]*model.Post, error) {
-	posts, err := r.service.Posts.GetPosts(ctx, &input)
-	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("queryResolver.Posts():\n" + err.Error()))
+	var (
+		posts []*model.Post
+		err   error
+	)
+	if r.storageMode == "POSTGRES" {
+		posts, err = r.service.Posts.GetPosts(ctx, &input)
+	} else {
+		posts, err = r.st.Posts.GetPosts(ctx, input.Limit, input.Offset)
 	}
+
+	if err != nil {
+		return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.Posts():\n %w", err))
+	}
+
 	return posts, nil
 }
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model.Post, error) {
-	comments, err := r.service.Comments.GetComments(ctx, postID)
+	var (
+		comments []*model.Comment
+		post     *model.Post
+		err      error
+	)
+	if r.storageMode == "POSTGRES" {
+		comments, err = r.service.Comments.GetComments(ctx, postID)
+		if err != nil {
+			return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.Post():\n %w", err))
+		}
+		post, err = r.service.Posts.GetPost(ctx, postID)
+	} else {
+		comments, err = r.st.Comments.GetPostComments(ctx, postID)
+		if err != nil {
+			return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.Post():\n %w", err))
+		}
+		post, err = r.st.Posts.GetPost(ctx, postID)
+	}
+
 	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
+		return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.Post():\n %w", err))
 	}
 
 	r.pc.LoadPost(comments, postID) //cache
 
-	post, err := r.service.Posts.GetPost(ctx, postID)
-	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
-	}
-
 	post.Comments, err = r.pc.PaginationComments(postID, 0, limit)
 	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("queryResolver.Post():\n" + err.Error()))
+		return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.Post():\n %w", err))
 	}
 
 	return post, nil
@@ -124,7 +185,7 @@ func (r *queryResolver) Post(ctx context.Context, postID int, limit int) (*model
 func (r *queryResolver) PaginationComment(ctx context.Context, postID int, pagination model.Pagination) ([]*model.Comment, error) {
 	comments, err := r.pc.PaginationComments(postID, pagination.Offset, pagination.Limit)
 	if err != nil {
-		return nil, grapherrors.TransformError(errors.New("queryResolver.PaginationComment():\n" + err.Error()))
+		return nil, grapherrors.TransformError(fmt.Errorf("queryResolver.PaginationComment():\n %w", err))
 	}
 	return comments, nil
 }

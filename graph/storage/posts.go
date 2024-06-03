@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -10,7 +11,14 @@ import (
 	"github.com/eeQuillibrium/posts/graph/model"
 )
 
-const preparedPostsVolume = 10000
+const (
+	preparedPostsVolume = 10000
+	maxLimit            = 100
+)
+
+var (
+	errNoPost = errors.New("post with this id doesn't exist")
+)
 
 type postsStorage struct {
 	posts    map[int]*model.Post
@@ -29,30 +37,32 @@ func NewPostsStorage() *postsStorage {
 
 func (ps *postsStorage) CreatePost(
 	ctx context.Context,
-	post *model.NewPost,
+	newPost *model.NewPost,
 ) (int, error) {
+
 	if err := ps.mediator.Notify(
 		eventIsUserExist + eventSeparator +
-			strconv.Itoa(ps.idSerial)); err != nil {
-		return 0, errors.New("postsStorage.CreatePost():\n" + err.Error())
+			strconv.Itoa(newPost.UserID)); err != nil {
+		return 0, fmt.Errorf("postsStorage.CreatePost():\n%w", err)
 	}
 
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	ps.posts[ps.idSerial] = &model.Post{
+	post := &model.Post{
 		ID:        ps.idSerial,
-		UserID:    post.UserID,
-		Text:      post.Text,
-		Header:    post.Header,
+		UserID:    newPost.UserID,
+		Text:      newPost.Text,
+		Header:    newPost.Header,
 		CreatedAt: time.Now().GoString(),
 		Comments:  []*model.Comment{},
 		IsClosed:  false,
 	}
+	ps.posts[ps.idSerial] = post
 
 	ps.idSerial++
 
-	return ps.idSerial, nil
+	return post.ID, nil
 }
 
 func (ps *postsStorage) ClosePost(
@@ -63,7 +73,7 @@ func (ps *postsStorage) ClosePost(
 	defer ps.mu.Unlock()
 
 	if _, ok := ps.posts[postID]; !ok {
-		return false, errors.New("postsStorage.ClosePost():" + "post with this id doesn't exits")
+		return false, fmt.Errorf("postsStorage.ClosePost(): %w: id = %d", errNoPost, postID)
 	}
 
 	ps.posts[postID].IsClosed = true
@@ -74,28 +84,41 @@ func (ps *postsStorage) GetPosts(
 	ctx context.Context,
 	offset int,
 	limit int,
-) ([]*model.Post, error) {
-	posts := make([]*model.Post, offset+limit)
+) ([]*model.Post, error) { // don't return err
+	if limit > maxLimit {
+		return nil, nil
+	}
 
-	i := offset + 1
-	for ; i < offset+limit; i++ {
-		ps.mu.Lock()
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	i := ps.idSerial - offset
+	fn := i + limit
+	posts := make([]*model.Post, 0, limit)
+
+	if i < 0 {
+		return nil, nil
+	}
+
+	for ; i < fn; i++ {
 		post, ok := ps.posts[i]
 		if !ok {
-			ps.mu.Unlock()
 			break
 		}
 		posts = append(posts, post)
-		ps.mu.Unlock()
 	}
 
-	return posts[:i-offset], nil
+	return posts, nil
 }
 func (ps *postsStorage) GetPost(
 	ctx context.Context,
 	postID int,
 ) (*model.Post, error) {
-	return nil, nil
+	post, ok := ps.posts[postID]
+	if !ok {
+		return nil, fmt.Errorf("GetPost(): %w", errNoPost)
+	}
+	return post, nil
 }
 
 func (ps *postsStorage) SetMediator(mediator Mediator) {
@@ -107,7 +130,7 @@ func (ps *postsStorage) isPostExist(postID int) error {
 	defer ps.mu.Unlock()
 
 	if _, ok := ps.posts[postID]; !ok {
-		return errors.New("isPostExist(): post with this postID doesn't exist")
+		return fmt.Errorf("isPostExist(): %w", errNoPost)
 	}
 
 	return nil

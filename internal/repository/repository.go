@@ -18,9 +18,9 @@ type Comments interface {
 		ctx context.Context,
 		postID int,
 	) ([]*model.Comment, error)
-	GetByComment(
+	GetByParentComment(
 		ctx context.Context,
-		commentID int,
+		parentID int,
 	) ([]*model.Comment, error)
 }
 
@@ -45,14 +45,7 @@ type Posts interface {
 }
 
 type Auth interface {
-	/*
-	Login(
-		ctx context.Context,
-		login string,
-		passhash string,
-	) (*model.User, error)
-	*/
-	Register(
+	CreateUser(
 		ctx context.Context,
 		login string,
 		passhash []byte,
@@ -72,8 +65,8 @@ func NewRepository(
 	db *sqlx.DB,
 ) *Repository {
 	return &Repository{
-		Posts: NewPostsRepository(log, cfg, db),
-		Auth:   NewAuthRepository(log, cfg, db),
+		Posts:    NewPostsRepository(log, cfg, db),
+		Auth:     NewAuthRepository(log, cfg, db),
 		Comments: NewCommentsRepository(log, cfg, db),
 	}
 }

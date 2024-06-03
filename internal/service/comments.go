@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/eeQuillibrium/posts/config"
 	"github.com/eeQuillibrium/posts/graph/model"
@@ -34,7 +34,7 @@ func (cs *commentsService) CreateComment(
 ) (int, error) {
 	commentID, err := cs.repo.CreateComment(ctx, comment)
 	if err != nil {
-		return 0, errors.New("commentsService.CreateComment():\n" + err.Error())
+		return 0, fmt.Errorf("commentsService.CreateComment():\n%w", err)
 	}
 	return commentID, nil
 }
@@ -45,18 +45,18 @@ func (cs *commentsService) GetComments(
 ) ([]*model.Comment, error) {
 	comments, err := cs.repo.GetComments(ctx, postID)
 	if err != nil {
-		return nil, errors.New("commentsService.GetComments():\n"+ err.Error())
+		return nil, fmt.Errorf("commentsService.GetComments():\n%w", err)
 	}
 	return comments, nil
 }
 
-func (cs *commentsService) GetByComment(
+func (cs *commentsService) GetByParentComment(
 	ctx context.Context,
-	commentID int,
+	parentID int,
 ) ([]*model.Comment, error) {
-	comments, err := cs.repo.GetByComment(ctx, commentID)
+	comments, err := cs.repo.GetByParentComment(ctx, parentID)
 	if err != nil {
-		return nil, errors.New("commentsService.GetByComment():\n"+ err.Error())
+		return nil, fmt.Errorf("commentsService.GetByComment():\n%w", err)
 	}
 	return comments, nil
 }
