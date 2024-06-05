@@ -1,3 +1,5 @@
+Go application for post, comments and user storaging with GraphQL, postgresql
+
 Если нужно запустить с INMEMORY хранилищем, то изменить в docker-compose.yml STORAGE_MODE=INMEMORY
 Если нужно запустить с POSTGRES хранилищем, то изменить в docker-compose.yml STORAGE_MODE=POSTGRES
 
@@ -8,7 +10,8 @@
   Через cmd/main.go:
     1. изменить host на localhost в config/config.yaml
     2. cmd/main.go из папки posts
-    
+GraphQL playground на localhost:8080
+
 Mutations:
   1. createComments: создает комментарии в бд и записывает в канал уведомление, 
   которое приходит в Subscriptons notification(postId: Int!), из которого читает клиент, на чтение из канала дается 5 секунд
