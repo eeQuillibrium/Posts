@@ -39,11 +39,12 @@ func (cs *commentsService) CreateComment(
 	return commentID, nil
 }
 
-func (cs *commentsService) GetComments(
+func (cs *commentsService) GetPostComments(
 	ctx context.Context,
 	postID int,
+	limit int,
 ) ([]*model.Comment, error) {
-	comments, err := cs.repo.GetComments(ctx, postID)
+	comments, err := cs.repo.GetPostComments(ctx, postID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("commentsService.GetComments():\n%w", err)
 	}
@@ -57,6 +58,18 @@ func (cs *commentsService) GetByParentComment(
 	comments, err := cs.repo.GetByParentComment(ctx, parentID)
 	if err != nil {
 		return nil, fmt.Errorf("commentsService.GetByComment():\n%w", err)
+	}
+	return comments, nil
+}
+func (cs *commentsService) PaginationComment(
+	ctx context.Context,
+	postID int,
+	offset int,
+	limit int,
+) ([]*model.Comment, error) {
+	comments, err := cs.repo.PaginationComment(ctx, postID, offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("commentsService.PaginationComments():\n%w", err)
 	}
 	return comments, nil
 }

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"time"
@@ -83,16 +82,13 @@ func (pr *postsRepository) GetPost(
 	postID int,
 ) (*model.Post, error) {
 	q := `
-	SELECT (user_id, text, header, created_at, is_closed)
+	SELECT *
 	FROM Posts
 	WHERE id = $1
 	`
 	var post model.Post
 
-	if err := pr.db.QueryRowxContext(ctx, q, postID).Scan(&post); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("postsRepository.GetPost(): post with id = %d doesn't exist", postID)
-		}
+	if err := pr.db.GetContext(ctx, &post, q, postID); err != nil {
 		return nil, fmt.Errorf("postsRepository.GetPost(): %w", err)
 	}
 

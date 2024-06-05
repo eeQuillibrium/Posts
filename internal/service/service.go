@@ -14,13 +14,20 @@ type Comments interface {
 		ctx context.Context,
 		comment *model.NewComment,
 	) (int, error)
-	GetComments(
+	GetPostComments(
 		ctx context.Context,
 		postID int,
+		limit int,
 	) ([]*model.Comment, error)
 	GetByParentComment(
 		ctx context.Context,
 		commentID int,
+	) ([]*model.Comment, error)
+	PaginationComment(
+		ctx context.Context,
+		postID int,
+		offset int,
+		limit int,
 	) ([]*model.Comment, error)
 }
 type Auth interface {

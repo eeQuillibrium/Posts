@@ -1,8 +1,14 @@
-Тестовое задание, ozon fintech
- 
-Для запуска:
-1. docker-compose up
+Если нужно запустить с INMEMORY хранилищем, то изменить в docker-compose.yml STORAGE_MODE=INMEMORY
+Если нужно запустить с POSTGRES хранилищем, то изменить в docker-compose.yml STORAGE_MODE=POSTGRES
 
+Для запуска:
+  Через compose:
+    1. изменить host на postgres_db в config/config.yaml
+    2. docker-compose up --build
+  Через cmd/main.go:
+    1. изменить host на localhost в config/config.yaml
+    2. cmd/main.go из папки posts
+    
 Mutations:
   1. createComments: создает комментарии в бд и записывает в канал уведомление, 
   которое приходит в Subscriptons notification(postId: Int!), из которого читает клиент, на чтение из канала дается 5 секунд
@@ -19,9 +25,6 @@ Subscriptions:
   notification: читает по postId: Int! из канала все приходящие 
 
 
-
-!с N+1 боролся при помощи dataloaders, которые объединяют выборку 
-для запроса в один запрос SELECT * FROM comments IN ()
 !для nested комментариев сделал запись в gqlgen.yml, чтобы он сгерерировал отдельный резолвер и читал из бд комменты 
 с parent_id comment-а, который запрашивается
 

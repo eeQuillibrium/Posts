@@ -44,12 +44,11 @@ func (s *MockPostsRepository) GetPost(
 
 type CommentsNode struct {
 	comments []*model.Comment
-	child *CommentsNode
+	child    *CommentsNode
 }
-type MockCommentsRepository struct{
+type MockCommentsRepository struct {
 	root *CommentsNode
 }
-
 
 func (s *MockCommentsRepository) CreateComment(
 	ctx context.Context,
@@ -57,15 +56,25 @@ func (s *MockCommentsRepository) CreateComment(
 ) (int, error) {
 	return 1, nil
 }
-func (s *MockCommentsRepository) GetComments(
+func (s *MockCommentsRepository) GetPostComments(
 	ctx context.Context,
 	postID int,
+	limit int,
 ) ([]*model.Comment, error) {
 	return nil, nil
 }
 func (s *MockCommentsRepository) GetByParentComment(
 	ctx context.Context,
 	commentID int,
+) ([]*model.Comment, error) {
+	return nil, nil
+}
+
+func (s *MockCommentsRepository) PaginationComment(
+	ctx context.Context,
+	postID int,
+	offset int,
+	limit int,
 ) ([]*model.Comment, error) {
 	return nil, nil
 }

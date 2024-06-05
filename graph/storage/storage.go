@@ -19,6 +19,12 @@ type Comments interface {
 		ctx context.Context,
 		parentID int,
 	) ([]*model.Comment, error)
+	PaginationComment(
+		ctx context.Context,
+		postID int,
+		offset int,
+		limit int,
+	) ([]*model.Comment, error)
 }
 type Posts interface {
 	CreatePost(

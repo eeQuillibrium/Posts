@@ -15,7 +15,6 @@ import (
 type Resolver struct {
 	service     *service.Service
 	log         *logger.Logger
-	pc          *storage.PostCacheStorage
 	notifyChan  chan *model.Notification
 	storageMode string // POSTGRES/INMEMORY
 	st          *storage.Storage
@@ -30,7 +29,6 @@ func NewResolver(
 	return &Resolver{
 		service:     service,
 		log:         log,
-		pc:          storage.NewPostCacheStorage(),
 		notifyChan:  notifyChan,
 		storageMode: os.Getenv("STORAGE_MODE"),
 		st:          st,

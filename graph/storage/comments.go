@@ -146,3 +146,23 @@ func (cs *commentsStorage) GetChildLevel(
 
 	return curr.comments[parentID], nil
 }
+
+func (cs *commentsStorage) PaginationComment(
+	ctx context.Context,
+	postID int,
+	offset int,
+	limit int,
+) ([]*model.Comment, error) {
+	defer cs.mu.Unlock()
+	cs.mu.Lock()
+
+	if offset > len(cs.commentsPost[postID]) {
+		return nil, nil
+	}
+
+	if len(cs.commentsPost[postID]) > offset+limit {
+		return cs.commentsPost[postID][offset:limit], nil
+	}
+
+	return cs.commentsPost[postID][offset:], nil
+}

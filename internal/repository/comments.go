@@ -60,29 +60,61 @@ func (cr *commentsRepository) CreateComment(
 	return postID, nil
 }
 
-func (r *commentsRepository) GetComments(
+func (cr *commentsRepository) GetPostComments(
 	ctx context.Context,
 	postID int,
+	limit int,
 ) ([]*model.Comment, error) {
 	var comments []*model.Comment
 
-	if err := r.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE post_id = $1",
-		postID); err != nil {
-		return nil, fmt.Errorf("commentsRepository.GetComments(): %w", err)
+	if err := cr.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE post_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3",
+		postID, limit, 0); err != nil {
+		return nil, fmt.Errorf("commentsRepository.GetPostComments(): %w", err)
 	}
 
 	return comments, nil
 }
 
-func (r *commentsRepository) GetByParentComment(
+func (cr *commentsRepository) GetByParentComment(
 	ctx context.Context,
 	commentID int,
 ) ([]*model.Comment, error) {
 	var comments []*model.Comment
 
-	if err := r.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE parent_id = $1",
+	if err := cr.db.SelectContext(ctx, &comments, "SELECT * FROM Comments WHERE parent_id = $1",
 		commentID); err != nil {
-		return nil, fmt.Errorf("commentsRepository.GetByComment(): %w", err)
+		return nil, fmt.Errorf("commentsRepository.GetByParentComment(): %w", err)
+	}
+	return comments, nil
+}
+func (cr *commentsRepository) PaginationComment(
+	ctx context.Context,
+	postID int,
+	offset int,
+	limit int,
+) ([]*model.Comment, error) {
+	comments := []*model.Comment{}
+
+	q := `
+	SELECT *
+	FROM Comments
+	WHERE post_id = $1
+	ORDER BY id
+	LIMIT $2 OFFSET $3
+	`
+
+	rows, err := cr.db.QueryxContext(ctx, q, postID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("commentsRepository.PaginationComments(): %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var comment model.Comment
+		if err := rows.StructScan(&comment); err != nil {
+			return nil, fmt.Errorf("commentsRepository.PaginationComments(): %w", err)
+		}
+		comments = append(comments, &comment)
 	}
 
 	return comments, nil
