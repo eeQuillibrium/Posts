@@ -1,12 +1,12 @@
 # Go application for post, comments and user storaging with GraphQL, postgresql  
   
 ## Запуск  
-⋅⋅⋅Через compose:  
-⋅⋅⋅⋅⋅⋅1. изменить host на postgres_db в config/config.yaml  
-⋅⋅⋅⋅⋅⋅2. docker-compose up --build  
-⋅⋅⋅Через cmd/main.go:  
-⋅⋅⋅1. изменить host на localhost в config/config.yaml  
-⋅⋅⋅2. cmd/main.go из папки posts  
+⋅⋅Через compose:  
+⋅⋅1. изменить host на postgres_db в config/config.yaml  
+⋅⋅2. docker-compose up --build  
+⋅⋅Через cmd/main.go:  
+⋅⋅1. изменить host на localhost в config/config.yaml  
+⋅⋅2. cmd/main.go из папки posts  
   
 Если нужно запустить с INMEMORY хранилищем, то изменить в docker-compose.yml STORAGE_MODE=INMEMORY  
   
