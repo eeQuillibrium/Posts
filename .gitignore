@@ -1,2 +1,2 @@
-./.vscode
-./readme.txt
+*.vscode
+readme.txt
