@@ -3,7 +3,8 @@
 ## Запуск  
 Через compose:  
 1. изменить host на postgres_db в config/config.yaml  
-2. docker-compose up --build  
+2. docker-compose up --build
+  
 Через cmd/main.go:  
 1. изменить host на localhost в config/config.yaml  
 2. cmd/main.go из папки posts  
