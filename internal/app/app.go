@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -36,30 +35,30 @@ func NewApp(
 
 func (a *app) Run() error {
 	ctx, cancel := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM)
-	
+
 	defer cancel()
 
 	db, err := sqlx.ConnectContext(ctx, "postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
 		a.cfg.PostgresDB.Host, a.cfg.PostgresDB.Port, a.cfg.PostgresDB.Username, a.cfg.PostgresDB.DBName, os.Getenv("DB_PASSWORD"), a.cfg.PostgresDB.SSLMode))
 	if err != nil {
-		return errors.New("app.Run(): " + err.Error())
+		return fmt.Errorf("app.Run(): %w", err)
 	}
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
-		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+		a.log.Fatal(fmt.Errorf("app.CreateMigrations(): %w", err))
 	}
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://migrations",
 		"postgres", driver)
 	if err != nil {
-		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+		a.log.Fatal(fmt.Errorf("app.CreateMigrations(): %w", err))
 	}
 	defer m.Close()
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		a.log.Fatal(errors.New("app.CreateMigrations(): " + err.Error()))
+		a.log.Fatal(fmt.Errorf("app.CreateMigrations(): %w", err))
 	}
 
 	repo := repository.NewRepository(a.log, a.cfg, db)
